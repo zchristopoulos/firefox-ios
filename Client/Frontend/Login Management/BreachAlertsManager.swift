@@ -36,8 +36,6 @@ final public class BreachAlertsManager {
     ///    - Parameters:
     ///         - completion: a completion handler for the processed breaches
     func loadBreaches(completion: @escaping (Maybe<[BreachRecord]>) -> Void) {
-        print("loadBreaches(): called")
-
         self.breachAlertsClient.fetchData(endpoint: .breachedAccounts) { maybeData in
             guard let data = maybeData.successValue else {
                 completion(Maybe(failure: BreachAlertsError(description: "failed to load breaches data")))
@@ -68,14 +66,11 @@ final public class BreachAlertsManager {
         // TODO: optimize this loop
         for login in logins {
             for breach in self.breaches {
-                // host check
+
                 let loginHostURL = URL(string: login.hostname)
                 if loginHostURL?.baseDomain == breach.domain {
-                    print("compareToBreaches(): breach: \(breach.domain)")
 
-                    // date check
                     let pwLastChanged = Date(timeIntervalSince1970: TimeInterval(login.timePasswordChanged))
-
                     let dateFormatter = DateFormatter()
                     dateFormatter.dateFormat = "yyyy-MM-dd"
                     if let breachDate = dateFormatter.date(from: breach.breachDate), pwLastChanged < breachDate {
@@ -87,5 +82,14 @@ final public class BreachAlertsManager {
         }
         print("compareToBreaches(): fin")
         return Maybe(success: result)
+    }
+
+    /// Compares a list of logins to a list of breaches and returns breached logins.
+    ///    - Parameters:
+    ///         - logins: a list of logins to compare breaches to
+    ///    - Returns: a list of logins with reused breached passwords.
+    func reusedBreachedPasswords(_ inLoginsList: [LoginRecord]) -> [LoginRecord] {
+
+        return []
     }
 }
