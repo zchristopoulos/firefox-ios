@@ -25,8 +25,9 @@ struct BreachRecord: Codable, Equatable {
 
 /// A manager for the user's breached login information, if any.
 final public class BreachAlertsManager {
-    var breaches: [BreachRecord] = []
     var breachAlertsClient: BreachAlertsClientProtocol
+    private var allBreaches: [BreachRecord] = []
+    var userBreaches: [LoginRecord] = []
 
     init(_ client: BreachAlertsClientProtocol = BreachAlertsClient()) {
         self.breachAlertsClient = client
@@ -46,18 +47,18 @@ final public class BreachAlertsManager {
                 return
             }
 
-            self.breaches = decoded
-            completion(Maybe(success: self.breaches))
+            self.allBreaches = decoded
+            completion(Maybe(success: self.allBreaches))
         }
     }
 
     /// Compares a list of logins to a list of breaches and returns breached logins.
     ///    - Parameters:
     ///         - logins: a list of logins to compare breaches to
-    func compareToBreaches(_ logins: [LoginRecord]) -> Maybe<[LoginRecord]> {
-        var result: [LoginRecord] = []
+    ///    - Returns: a list of the user's breached logins.
+    func findUserBreaches(_ logins: [LoginRecord]) -> Maybe<[LoginRecord]> {
 
-        if self.breaches.count <= 0 {
+        if self.allBreaches.count <= 0 {
             return Maybe(failure: BreachAlertsError(description: "cannot compare to an empty list of breaches"))
         } else if logins.count <= 0 {
             return Maybe(failure: BreachAlertsError(description: "cannot compare to an empty list of logins"))
@@ -65,8 +66,7 @@ final public class BreachAlertsManager {
 
         // TODO: optimize this loop
         for login in logins {
-            for breach in self.breaches {
-
+            for breach in self.allBreaches {
                 let loginHostURL = URL(string: login.hostname)
                 if loginHostURL?.baseDomain == breach.domain {
 
@@ -75,20 +75,38 @@ final public class BreachAlertsManager {
                     dateFormatter.dateFormat = "yyyy-MM-dd"
                     if let breachDate = dateFormatter.date(from: breach.breachDate), pwLastChanged < breachDate {
                         print("compareToBreaches(): ⚠️ password exposed ⚠️: \(breach.breachDate)")
-                        result.append(login)
+                        self.userBreaches.append(login)
                     }
                 }
             }
         }
-        print("compareToBreaches(): fin")
-        return Maybe(success: result)
+        return Maybe(success: self.userBreaches)
     }
 
     /// Compares a list of logins to a list of breaches and returns breached logins.
-    ///    - Parameters:
-    ///         - logins: a list of logins to compare breaches to
-    ///    - Returns: a list of logins with reused breached passwords.
+    ///    - Returns: a list of the user's breached logins with reused breached passwords.
     func reusedBreachedPasswords(_ inLoginsList: [LoginRecord]) -> [LoginRecord] {
+
+        // 1. in userBreaches, take pw
+        // 2. in full userLogins list, compare against each for matching pw
+        // 3. if same domain/record, skip
+
+        return []
+    }
+
+    /// Finds entries in a list of logins with the same password.
+    func duplicatePasswords(_ inLoginsList: [LoginRecord]) -> [LoginRecord] {
+
+        // double for loop to check 1 entry against all others
+        // possibly alt way to do this with sets
+
+        return []
+    }
+
+    /// Finds entries in a list of logins with weak passwords.
+    func weakPasswords(_ inLoginsList: [LoginRecord]) -> [LoginRecord] {
+
+        // TODO: find out weak password standard
 
         return []
     }
